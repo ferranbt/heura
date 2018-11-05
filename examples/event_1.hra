@@ -1,0 +1,12 @@
+
+artifact (
+    ERC20
+)
+
+fn do_something(from) {
+    print (from)
+}
+
+on ERC20.Transfer (from, to, value) {
+    do_something(from)
+}

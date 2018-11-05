@@ -1,0 +1,12 @@
+
+artifact (
+    ERC20
+)
+
+on ERC20.Transfer (from, to, value) {
+    print("---------------------")
+    print(this.blocknumber)
+    print(this.blockhash)
+    print(this.txhash)
+    print(this.obj.symbol())
+}
