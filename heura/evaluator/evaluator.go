@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/umbracle/heura/heura/encoding"
 	"github.com/umbracle/heura/heura/token"
 
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/contracts/ens"
 
 	"github.com/ethereum/go-ethereum/core/types"
@@ -92,23 +94,24 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 			event.Address = &i
 		}
 
-		/*
-			// TODO. Check for specific topics
-			topicObjs := []object.Object{}
-			topicArgs := abi.Arguments{}
+		// TODO. Check for specific topics
+		topicObjs := []object.Object{}
+		topicArgs := abi.Arguments{}
 
-			for indx, i := range m.Inputs {
-				if i.Indexed {
-					topicObjs = append(topicObjs, Eval(params[indx].Value, env))
-					topicArgs = append(topicArgs, i)
-				}
+		for indx, i := range m.Inputs {
+			if i.Indexed {
+				topicObjs = append(topicObjs, Eval(params[indx].Value, env))
+				topicArgs = append(topicArgs, i)
 			}
+		}
 
-			topics, err := encoding.EncodeTopics(topicArgs, topicObjs)
-			if err != nil {
-				return newError(err.Error())
-			}
-		*/
+		topics, err := encoding.EncodeTopics(topicArgs, topicObjs)
+		if err != nil {
+			return newError(err.Error())
+		}
+
+		fmt.Println("-- encoded topics --")
+		fmt.Println(topics)
 
 		env.Set(fmt.Sprintf("%s_%s", contract, method), event)
 		return nil

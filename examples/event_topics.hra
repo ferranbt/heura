@@ -1,0 +1,10 @@
+
+artifact (
+    ERC20
+)
+
+let FROM = 0x1111111111111111111111111111111111111111;
+
+on ERC20.Transfer (from=FROM, to, value) {
+    print (from)
+}

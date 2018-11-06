@@ -71,23 +71,22 @@ func ParseTopics(args abi.Arguments, topics []common.Hash) ([]object.Object, err
 }
 
 // EncodeTopics encodes a group of topics
-func EncodeTopics(args abi.Arguments, objs []object.Object) ([]*common.Hash, error) {
+func EncodeTopics(args abi.Arguments, objs []object.Object) ([][]common.Hash, error) {
 	if len(args) != len(objs) {
 		return nil, fmt.Errorf("Length should be the same. Arguments %d and objs %d", len(args), len(objs))
 	}
 
-	topics := []*common.Hash{}
+	topics := [][]common.Hash{}
 	for indx, arg := range args {
-		if objs[indx] == nil {
-			topics = append(topics, nil)
-		} else {
+		t := []common.Hash{}
+		if objs[indx] != nil {
 			topic, err := EncodeTopic(objs[indx], arg.Type)
 			if err != nil {
 				return nil, err
 			}
-
-			topics = append(topics, &topic)
+			t = append(t, topic)
 		}
+		topics = append(topics, t)
 	}
 
 	return topics, nil
