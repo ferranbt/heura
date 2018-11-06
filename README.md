@@ -98,6 +98,16 @@ on ERC20.Transfer (from, to, value) {
 } 
 ```
 
+It is possible to filter by specific topic values in the event:
+
+```
+let FROM=0xB9536d30A25466a909563EE4f35fE3c158fc2964
+
+on ERC20.Transfer(from=FROM, to, value) {
+```
+
+Note that is only possible with parameters that are indexed on the event.
+
 ### Functions
 
 Functions are declared with the keyword 'fn' and can return multiple values.
