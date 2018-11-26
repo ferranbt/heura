@@ -144,6 +144,7 @@ func (p *Parser) parseArtifactStatement() *ast.ArtifactStatement {
 		for _, i := range p.parseExpressionList(token.RPAREN) {
 			if _, ok := i.(*ast.StringLiteral); !ok { // either string (folder) or ident for default values
 				if _, ok1 := i.(*ast.Identifier); !ok1 {
+					p.errors = append(p.errors, fmt.Sprintf("could not parse artifact with token %s", i.TokenLiteral()))
 					return nil
 				}
 			}

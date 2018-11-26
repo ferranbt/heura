@@ -2,11 +2,58 @@ package parser
 
 import (
 	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/umbracle/heura/heura/ast"
 	"github.com/umbracle/heura/heura/lexer"
 )
+
+func TestArtifactStatement(t *testing.T) {
+	tests := []struct {
+		input   string
+		imports []string
+		err     bool
+	}{
+		{"artifact (\"xxxx\", \"yyyy\")", []string{"xxxx", "yyyy"}, false},
+		{"artifact (ERC20)", []string{"ERC20"}, false},
+		{"artifact (home/umbracle/code)", []string{}, true},
+		{"artifact ERC20", []string{"ERC20"}, false},
+		{"artifact \"/home/umbracle/code\"", []string{"/home/umbracle/code"}, false},
+	}
+
+	for _, tt := range tests {
+		l := lexer.New(tt.input)
+		p := New(l)
+		program := p.ParseProgram()
+
+		if len(p.Errors()) != 0 && !tt.err {
+			fmt.Println("x")
+			t.Fatalf("parsing error")
+		}
+		if tt.err {
+			continue
+		}
+
+		if len(program.Statements) != 1 {
+			t.Fatalf(
+				"program.Statements does not contain 1 statements. got=%d",
+				len(program.Statements),
+			)
+		}
+
+		stmt := program.Statements[0].(*ast.ArtifactStatement)
+
+		found := []string{}
+		for _, i := range stmt.Folders {
+			found = append(found, i.String())
+		}
+
+		if !reflect.DeepEqual(found, tt.imports) {
+			t.Fatal("dont match")
+		}
+	}
+}
 
 func TestLetStatements(t *testing.T) {
 	tests := []struct {

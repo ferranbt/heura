@@ -174,7 +174,7 @@ func (as *ArtifactStatement) TokenLiteral() string {
 	return "ArtifactStatement"
 }
 func (as *ArtifactStatement) String() string {
-	return "OnStatement"
+	return "ArtifactStatement"
 }
 
 func (os *OnStatement) statementNode() {}
