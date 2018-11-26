@@ -98,6 +98,10 @@ type ArtifactStatement struct {
 	Folders []Expression
 }
 
+type ImportStatement struct {
+	Folders []Expression
+}
+
 type BlockStatement struct {
 	Token      token.Token // the { token
 	Statements []Statement
@@ -175,6 +179,14 @@ func (as *ArtifactStatement) TokenLiteral() string {
 }
 func (as *ArtifactStatement) String() string {
 	return "ArtifactStatement"
+}
+
+func (as *ImportStatement) statementNode() {}
+func (as *ImportStatement) TokenLiteral() string {
+	return "ImportStatement"
+}
+func (as *ImportStatement) String() string {
+	return "ImportStatement"
 }
 
 func (os *OnStatement) statementNode() {}
