@@ -38,6 +38,7 @@ const (
 
 	// Keywords
 	ARTIFACT = "ARTIFACT"
+	IMPORT   = "IMPORT"
 	FUNCTION = "FUNCTION"
 	LET      = "LET"
 	TRUE     = "TRUE"
@@ -57,6 +58,7 @@ type Token struct {
 
 var keywords = map[string]TokenType{
 	"artifact": ARTIFACT,
+	"import":   IMPORT,
 	"fn":       FUNCTION,
 	"let":      LET,
 	"true":     TRUE,

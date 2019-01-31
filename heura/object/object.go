@@ -8,12 +8,11 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/umbracle/heura/heura/ast"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	"github.com/ethereum/go-ethereum/common"
-
-	"github.com/umbracle/heura/heura/ast"
 )
 
 type ObjectType string

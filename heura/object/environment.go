@@ -13,12 +13,27 @@ func NewEnclosedEnvironment(outer *Environment) *Environment {
 
 func NewEnvironment() *Environment {
 	s := make(map[string]Object)
-	return &Environment{store: s, outer: nil}
+	return &Environment{
+		store:    s,
+		outer:    nil,
+		Builtins: map[string]*Builtin{},
+	}
 }
 
 type Environment struct {
-	store map[string]Object
-	outer *Environment
+	store    map[string]Object
+	outer    *Environment
+	Builtins map[string]*Builtin
+}
+
+func (e *Environment) AddBuiltins(builtins map[string]*Builtin) {
+	for name, b := range builtins {
+		e.Builtins[name] = b
+	}
+}
+
+func (e *Environment) AddBuiltin(name string, b *Builtin) {
+	e.Builtins[name] = b
 }
 
 func (e *Environment) GetContract(name string) *Contract {

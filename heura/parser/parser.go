@@ -75,6 +75,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.STRING, p.parseStringLiteral)
 	p.registerPrefix(token.LBRAKET, p.parseArrayLiteral)
 	p.registerPrefix(token.LBRACE, p.parseHashLiteral)
+	p.registerPrefix(token.FUNCTION, p.parseFunctionInline)
 
 	p.infixParseFns = make(map[token.TokenType]infixParseFn)
 	p.registerInfix(token.PLUS, p.parseInfixExpression)
@@ -120,6 +121,8 @@ func (p *Parser) parseStatement() ast.Statement {
 	switch p.curToken.Type {
 	case token.LET:
 		return p.parseLetStatement()
+	case token.IMPORT:
+		return p.parseImportsStatement()
 	case token.ARTIFACT:
 		return p.parseArtifactStatement()
 	case token.RETURN:
@@ -133,9 +136,29 @@ func (p *Parser) parseStatement() ast.Statement {
 	}
 }
 
+func (p *Parser) parseImportsStatement() *ast.ImportStatement {
+	stmt := &ast.ImportStatement{}
+	stmt.Folders = p.parseImportsExpressions()
+
+	if p.peekTokenIs(token.SEMICOLON) {
+		p.nextToken()
+	}
+
+	return stmt
+}
+
 func (p *Parser) parseArtifactStatement() *ast.ArtifactStatement {
 	stmt := &ast.ArtifactStatement{}
+	stmt.Folders = p.parseImportsExpressions()
 
+	if p.peekTokenIs(token.SEMICOLON) {
+		p.nextToken()
+	}
+
+	return stmt
+}
+
+func (p *Parser) parseImportsExpressions() []ast.Expression {
 	if p.peekTokenIs(token.LPAREN) {
 		// i.e. artifact (ERC20)
 		p.nextToken()
@@ -152,33 +175,27 @@ func (p *Parser) parseArtifactStatement() *ast.ArtifactStatement {
 			values = append(values, i)
 		}
 
-		stmt.Folders = values
-	} else {
-		// i.e. artifact ERC20
-		if p.peekTokenIs(token.IDENT) {
-			p.nextToken()
-
-			stmt.Folders = []ast.Expression{&ast.Identifier{
-				Token: p.curToken,
-				Value: p.curToken.Literal,
-			}}
-		} else if p.peekTokenIs(token.STRING) {
-			p.nextToken()
-
-			stmt.Folders = []ast.Expression{&ast.StringLiteral{
-				Token: p.curToken,
-				Value: p.curToken.Literal,
-			}}
-		} else {
-			return nil
-		}
+		return values
 	}
 
-	if p.peekTokenIs(token.SEMICOLON) {
+	// i.e. artifact ERC20
+	if p.peekTokenIs(token.IDENT) {
 		p.nextToken()
-	}
 
-	return stmt
+		return []ast.Expression{&ast.Identifier{
+			Token: p.curToken,
+			Value: p.curToken.Literal,
+		}}
+	} else if p.peekTokenIs(token.STRING) {
+		p.nextToken()
+
+		return []ast.Expression{&ast.StringLiteral{
+			Token: p.curToken,
+			Value: p.curToken.Literal,
+		}}
+	} else {
+		return nil
+	}
 }
 
 func (p *Parser) parseLetStatement() *ast.LetStatement {
@@ -462,6 +479,25 @@ func (p *Parser) parseOnStatement() *ast.OnStatement {
 	}
 
 	lit.Parameters = p.parseEventParameters()
+
+	if !p.expectPeek(token.LBRACE) {
+		return nil
+	}
+
+	lit.Body = p.parseBlockStatement()
+	return lit
+}
+
+func (p *Parser) parseFunctionInline() ast.Expression {
+	lit := &ast.FunctionLiteral{
+		Token: p.curToken,
+	}
+
+	if !p.expectPeek(token.LPAREN) {
+		return nil
+	}
+
+	lit.Parameters = p.parseFunctionParameters()
 
 	if !p.expectPeek(token.LBRACE) {
 		return nil

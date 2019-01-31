@@ -523,6 +523,17 @@ func TestIfElseExpression(t *testing.T) {
 	}
 }
 
+func TestFunctionInline(t *testing.T) {
+	input := `let x = fn() {}8`
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	fmt.Println(program)
+}
+
 func TestFunctionLiteralParsing(t *testing.T) {
 	input := `fn a(x, y) { x + y; }`
 

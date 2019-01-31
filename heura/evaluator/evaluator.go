@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/umbracle/heura/heura/ast"
 	"github.com/umbracle/heura/heura/encoding"
 	"github.com/umbracle/heura/heura/token"
 
@@ -13,7 +14,6 @@ import (
 	"github.com/ethereum/go-ethereum/contracts/ens"
 
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/umbracle/heura/heura/ast"
 	"github.com/umbracle/heura/heura/ethereum"
 	"github.com/umbracle/heura/heura/object"
 )
@@ -34,7 +34,6 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return Eval(node.Expression, env)
 
 	case *ast.ArtifactStatement:
-
 		abis, err := ethereum.ReadArtifacts(node.Folders)
 		if err != nil {
 			return newError(err.Error())
@@ -194,7 +193,9 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 			Env:        env,
 		}
 
-		env.Set(node.Name.Value, val)
+		if node.Name != nil {
+			env.Set(node.Name.Value, val)
+		}
 		return val
 
 	case *ast.CallExpression:
@@ -207,7 +208,6 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		if len(args) == 1 && isError(args[0]) {
 			return args[0]
 		}
-
 		return ApplyFunction(env, function, args)
 
 	case *ast.StringLiteral:
@@ -506,6 +506,9 @@ func evalIdentifier(node *ast.Identifier, env *object.Environment) object.Object
 		return val
 	}
 
+	if builtin, ok := env.Builtins[node.Value]; ok {
+		return builtin
+	}
 	if builtin, ok := builtins[node.Value]; ok {
 		return builtin
 	}
@@ -667,7 +670,10 @@ func ApplyEvent(event object.Event, args []object.Object, log *types.Log) (objec
 func ApplyFunction(env *object.Environment, fn object.Object, args []object.Object) object.Object {
 	switch fn := fn.(type) {
 	case *object.Function:
-		extendedEnv := extendFunctionEnv(fn, args)
+		extendedEnv, err := extendFunctionEnv(fn, args)
+		if err != nil {
+			return newError(err.Error())
+		}
 		evaluated := Eval(fn.Body, extendedEnv)
 		return unwrapReturnValue(evaluated)
 
@@ -695,14 +701,17 @@ func ApplyFunction(env *object.Environment, fn object.Object, args []object.Obje
 	}
 }
 
-func extendFunctionEnv(fn *object.Function, args []object.Object) *object.Environment {
+func extendFunctionEnv(fn *object.Function, args []object.Object) (*object.Environment, error) {
 	env := object.NewEnclosedEnvironment(fn.Env)
+
+	if len(args) != len(fn.Parameters) {
+		return nil, fmt.Errorf("length or parameters not correct")
+	}
 
 	for i, param := range fn.Parameters {
 		env.Set(param.Value, args[i])
 	}
-
-	return env
+	return env, nil
 }
 
 func unwrapReturnValue(obj object.Object) object.Object {
