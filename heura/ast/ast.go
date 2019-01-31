@@ -115,6 +115,8 @@ type FunctionLiteral struct {
 	Body       *BlockStatement
 }
 
+func (fl *FunctionLiteral) expressionNode() {}
+
 type OnStatement struct {
 	Contract   *Identifier
 	Method     *Identifier
