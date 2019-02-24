@@ -24,7 +24,7 @@ contract Sample {
 `
 
 func TestArgumentsIntegration(t *testing.T) {
-	client := newClient("http://localhost:8545")
+	client := newClient()
 
 	accounts, err := client.listAccounts()
 	if err != nil {
@@ -105,5 +105,11 @@ func TestArgumentsIntegration(t *testing.T) {
 				t.Fatal("bad")
 			}
 		})
+	}
+}
+
+func TestArgumentsRandom(t *testing.T) {
+	if !random() {
+		t.Skip()
 	}
 }

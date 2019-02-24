@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -31,7 +32,11 @@ type ethClient struct {
 	gasLimit string
 }
 
-func newClient(endpoint string) *ethClient {
+func newClient() *ethClient {
+	return newClientWithEndpoint("http://localhost:8545")
+}
+
+func newClientWithEndpoint(endpoint string) *ethClient {
 	rpc, err := ethrpc.Dial(endpoint)
 	if err != nil {
 		panic(err)
@@ -149,4 +154,8 @@ func compileAndDeployTemplate(templateStr string, params interface{}, deployer c
 	}
 
 	return &abi, rr, nil
+}
+
+func random() bool {
+	return os.Getenv("RANDOM_TESTS") == "TRUE"
 }
