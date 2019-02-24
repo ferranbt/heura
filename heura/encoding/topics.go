@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/crypto/sha3"
+
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 
@@ -94,6 +96,10 @@ func EncodeTopics(args abi.Arguments, objs []object.Object) ([][]common.Hash, er
 
 // EncodeTopic encodes a topic with a specific type
 func EncodeTopic(obj object.Object, t abi.Type) (common.Hash, error) {
+	return encodeTopic(obj, t, 0)
+}
+
+func encodeTopic(obj object.Object, t abi.Type, arraySize int) (common.Hash, error) {
 	switch t.T {
 	case abi.BoolTy:
 		if obj.Type() != object.BOOLEAN_OBJ {
@@ -119,15 +125,25 @@ func EncodeTopic(obj object.Object, t abi.Type) (common.Hash, error) {
 		return common.HexToHash(obj.(*object.Bytes).Value), nil
 
 	case abi.AddressTy:
+		var val string
 		switch obj.Type() {
 		case object.ADDRESS_OBJ:
-			return common.HexToHash(obj.(*object.Address).Value), nil
+			val = obj.(*object.Address).Value
 
 		case object.BYTES_OBJ:
-			return common.HexToHash(obj.(*object.Bytes).Value), nil
+			val = obj.(*object.Bytes).Value
+
+		default:
+			return common.Hash{}, encodeTopicErr(obj, t)
 		}
 
-		return common.Hash{}, encodeTopicErr(obj, t)
+		var size int
+		if arraySize != 0 {
+			size = 64
+		} else {
+			size = 40
+		}
+		return common.BytesToHash(common.LeftPadBytes(common.HexToHash(val).Bytes(), size)), nil
 
 	case abi.FixedBytesTy:
 		if obj.Type() != object.BYTES_OBJ {
@@ -144,7 +160,22 @@ func EncodeTopic(obj object.Object, t abi.Type) (common.Hash, error) {
 		return topic, nil
 
 	case abi.SliceTy:
-		return common.Hash{}, fmt.Errorf("Encoding of arrays is not supported")
+		if obj.Type() != object.ARRAY_OBJ {
+			return common.Hash{}, encodeTopicErr(obj, t)
+		}
+
+		arr := obj.(*object.Array)
+		size := len(arr.Elements)
+
+		res := []byte{}
+		for _, val := range arr.Elements {
+			r, err := encodeTopic(val, *t.Elem, size)
+			if err != nil {
+				return common.Hash{}, err
+			}
+			res = append(res, r.Bytes()...)
+		}
+		return common.BytesToHash(hash(res)), nil
 
 	default:
 		return common.Hash{}, fmt.Errorf("Topic encoding of type %s not supported", t.String())
@@ -172,9 +203,12 @@ func ParseTopic(data []byte, t abi.Type) (object.Object, error) {
 	case abi.FixedBytesTy:
 		return &object.Bytes{Value: hexutil.Encode(data[0:t.Size])}, nil
 
+	case abi.ArrayTy:
+		fallthrough
+
 	case abi.SliceTy:
 		// Arrays are converted into sha3 format https://github.com/ethereum/web3.js/issues/344
-		return nil, fmt.Errorf("Parsing of arrays is not supported")
+		return &object.Bytes{Value: hexutil.Encode(data)}, nil
 
 	default:
 		return nil, fmt.Errorf("Topic parsing of type %s not supported", t.String())
@@ -183,4 +217,11 @@ func ParseTopic(data []byte, t abi.Type) (object.Object, error) {
 
 func encodeTopicErr(obj object.Object, t abi.Type) error {
 	return fmt.Errorf("cannot encode %s as %s", obj.Type(), t.String())
+}
+
+func hash(b []byte) []byte {
+	f := sha3.NewKeccak256()
+	f.Write(b)
+	res := f.Sum(nil)
+	return res
 }

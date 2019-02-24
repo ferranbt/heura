@@ -21,6 +21,15 @@ func TestTopicEncoding(t *testing.T) {
 			&object.Integer{Value: big.NewInt(1)},
 			"int256",
 		},
+		{
+			&object.Array{
+				Elements: []object.Object{
+					&object.Address{Value: Address},
+					&object.Address{Value: Address},
+				},
+			},
+			"address[]",
+		},
 	}
 
 	for _, cc := range cases {
@@ -40,8 +49,10 @@ func TestTopicEncoding(t *testing.T) {
 				t.Fatalf("bad topic parsing: %v", err)
 			}
 
-			if !reflect.DeepEqual(topic, cc.Input) {
-				t.Fatalf("bad")
+			if cc.Input.Type() != object.ARRAY_OBJ {
+				if !reflect.DeepEqual(topic, cc.Input) {
+					t.Fatalf("bad")
+				}
 			}
 		})
 	}
@@ -82,9 +93,33 @@ func TestTopicsIntegration(t *testing.T) {
 			{"bytes3", &object.Bytes{Value: "0x111111"}, true},
 			{"address", &object.Address{Value: Address}, true},
 		},
+		{
+			{
+				"address[]",
+				&object.Array{
+					Elements: []object.Object{
+						&object.Address{Value: Address},
+						&object.Address{Value: Address},
+					},
+				},
+				true,
+			},
+		},
+		{
+			{
+				"int[]",
+				&object.Array{
+					Elements: []object.Object{
+						&object.Integer{Value: big.NewInt(10)},
+						&object.Integer{Value: big.NewInt(20)},
+					},
+				},
+				true,
+			},
+		},
 	}
 
-	client := newClient("http://localhost:8545")
+	client := newClient()
 
 	accounts, err := client.listAccounts()
 	if err != nil {
@@ -137,8 +172,15 @@ func TestTopicsIntegration(t *testing.T) {
 				t.Fatalf("failed to parse logs: %v", err)
 			}
 
-			if !reflect.DeepEqual(res, values) {
-				t.Fatal("bad decoding")
+			if len(res) != len(values) {
+				t.Fatal("bad length")
+			}
+			for indx, i := range values {
+				if i.Type() != object.ARRAY_OBJ {
+					if !reflect.DeepEqual(i, res[indx]) {
+						t.Fatal("bad decoding")
+					}
+				}
 			}
 
 			for indx, i := range event.Inputs {
