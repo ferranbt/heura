@@ -117,4 +117,19 @@ var builtins = map[string]*object.Builtin{
 			return NULL
 		},
 	},
+
+	"Account": &object.Builtin{
+		Fn: func(args ...object.Object) object.Object {
+			if len(args) != 1 {
+				return newError("expected one parameter but found %d", len(args))
+			}
+
+			account, err := object.NewAccount(args[0])
+			if err != nil {
+				return newError(err.Error())
+			}
+
+			return account
+		},
+	},
 }
