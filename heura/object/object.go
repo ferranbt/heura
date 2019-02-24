@@ -20,6 +20,7 @@ type ObjectType string
 const (
 	INSTANCE_OBJ     = "INSTANCE"
 	CONTRACT_OBJ     = "CONTRACT"
+	ACCOUNT_OBJ      = "ACCOUNT"
 	MULTIPLE_OBJ     = "MULTIPLE"
 	INTEGER_OBJ      = "INTEGER"
 	BOOLEAN_OBJ      = "BOOLEAN"
@@ -270,4 +271,34 @@ type Instance struct {
 func (i *Instance) Type() ObjectType { return INSTANCE_OBJ }
 func (i *Instance) Inspect() string {
 	return fmt.Sprintf("%s(%s)", i.Name, hexutil.Encode(i.Address.Bytes()))
+}
+
+type Account struct {
+	Addr common.Address
+}
+
+func (a *Account) Type() ObjectType { return ACCOUNT_OBJ }
+func (a *Account) Inspect() string  { return fmt.Sprintf("address: %s", a.Addr.String()) }
+
+func NewAccount(obj Object) (*Account, error) {
+	var addr common.Address
+
+	switch obj.Type() {
+	case BYTES_OBJ:
+		aux, err := obj.(*Bytes).ToAddress()
+		if err != nil {
+			return nil, err
+		}
+		addr = aux.ToAddress()
+
+	case ADDRESS_OBJ:
+		addr = obj.(*Address).ToAddress()
+
+	default:
+		return nil, fmt.Errorf("expected address type but found %s", obj.Type())
+	}
+
+	return &Account{
+		Addr: addr,
+	}, nil
 }

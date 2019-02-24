@@ -279,6 +279,9 @@ func evalDotIndexExpression(env *object.Environment, left object.Object, index a
 		}
 		return newError("Dot access to hash object requires an identifier")
 
+	case left.Type() == object.ACCOUNT_OBJ:
+		return evalAccountCall(left.(*object.Account), index, env)
+
 	case left.Type() == object.INSTANCE_OBJ:
 		return evalInstanceCall(left.(*object.Instance), index, env)
 	}
@@ -322,6 +325,44 @@ func evalAddress(env *object.Environment, obj object.Object) (*object.Address, e
 	}
 
 	return address, nil
+}
+
+func evalAccountCall(account *object.Account, expr ast.Expression, env *object.Environment) object.Object {
+	call, ok := expr.(*ast.CallExpression)
+	if !ok {
+		return newError("it is not a call")
+	}
+
+	name, ok := call.Function.(*ast.Identifier)
+	if !ok {
+		return newError("name not found")
+	}
+
+	rpcEndpoint, err := env.GetRPCEndpoint()
+	if err != nil {
+		return newError(err.Error())
+	}
+
+	client := ethereum.NewClient(rpcEndpoint)
+
+	switch name.Value {
+	case "nonce":
+		nonce, err := client.NonceAt(context.Background(), account.Addr, nil)
+		if err != nil {
+			return newError(err.Error())
+		}
+		return &object.Integer{Value: big.NewInt(int64(nonce))}
+
+	case "balance":
+		balance, err := client.BalanceAt(context.Background(), account.Addr, nil)
+		if err != nil {
+			return newError(err.Error())
+		}
+		return &object.Integer{Value: balance}
+
+	default:
+		return newError("Unknown account method: %s", name.Value)
+	}
 }
 
 func evalInstanceCall(instance *object.Instance, expr ast.Expression, env *object.Environment) object.Object {
