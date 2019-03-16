@@ -1,6 +1,6 @@
 
 artifact (
-    ERC20
+    "ERC20"
 )
 
 fn do_something(from) {

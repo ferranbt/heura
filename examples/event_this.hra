@@ -1,6 +1,6 @@
 
 artifact (
-    ERC20
+    "ERC20"
 )
 
 on ERC20.Transfer (from, to, value) {
