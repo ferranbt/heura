@@ -16,9 +16,9 @@ func TestArtifactStatement(t *testing.T) {
 		err     bool
 	}{
 		{"artifact (\"xxxx\", \"yyyy\")", []string{"xxxx", "yyyy"}, false},
-		{"artifact (ERC20)", []string{"ERC20"}, false},
-		{"artifact (home/umbracle/code)", []string{}, true},
-		{"artifact ERC20", []string{"ERC20"}, false},
+		{"artifact (\"ERC20\")", []string{"ERC20"}, false},
+		{"artifact (\"home/umbracle/code\")", []string{}, true},
+		{"artifact \"ERC20\"", []string{"ERC20"}, false},
 		{"artifact \"/home/umbracle/code\"", []string{"/home/umbracle/code"}, false},
 	}
 
