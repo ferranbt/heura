@@ -47,7 +47,7 @@ or use the builtin ones:
 
 ```
 artifacts (
-    ERC20
+    "ERC20"
 )
 ```
 
