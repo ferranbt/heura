@@ -6,7 +6,6 @@ require (
 	github.com/aristanetworks/goarista v0.0.0-20190219163901-728bce664cf5 // indirect
 	github.com/btcsuite/btcd v0.0.0-20190213025234-306aecffea32 // indirect
 	github.com/cespare/cp v1.1.1 // indirect
-	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/deckarep/golang-set v1.7.1 // indirect
 	github.com/edsrzf/mmap-go v1.0.0 // indirect
 	github.com/ethereum/go-ethereum v1.8.20
@@ -22,6 +21,7 @@ require (
 	github.com/pborman/uuid v1.2.0 // indirect
 	github.com/rjeczalik/notify v0.9.2 // indirect
 	github.com/rs/cors v1.6.0 // indirect
+	github.com/spf13/cobra v0.0.5
 	github.com/stretchr/testify v1.3.0 // indirect
 	github.com/syndtr/goleveldb v1.0.0 // indirect
 	golang.org/x/crypto v0.0.0-20190222235706-ffb98f73852f
