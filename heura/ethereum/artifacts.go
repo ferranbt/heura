@@ -82,7 +82,11 @@ func ReadArtifacts(exprs []ast.Expression) (map[string]*abi.ABI, error) {
 				add(filepath.Base(obj.Value), abi)
 
 			} else {
-				return nil, fmt.Errorf("path %s is neither file nor folder", obj.Value)
+				abi, err := ReadBuiltInArtifact(obj.Value)
+				if err != nil {
+					return nil, err
+				}
+				add(obj.Value, abi)
 			}
 		}
 	}
