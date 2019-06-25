@@ -5,6 +5,7 @@ import (
 
 	"github.com/umbracle/heura/commands/repl"
 	"github.com/umbracle/heura/commands/run"
+	"github.com/umbracle/heura/commands/version"
 )
 
 var rootCmd = &cobra.Command{
@@ -15,6 +16,7 @@ func init() {
 	rootCmd.AddCommand(
 		repl.RootCmd,
 		run.RootCmd,
+		version.RootCmd,
 	)
 }
 
