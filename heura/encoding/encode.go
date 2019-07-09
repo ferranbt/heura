@@ -5,11 +5,10 @@ import (
 	"math/big"
 	"reflect"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
-
 	"github.com/ethereum/go-ethereum/accounts/abi"
 
 	"github.com/umbracle/heura/heura/object"
+	"github.com/umbracle/minimal/helper/hex"
 )
 
 // Big batch of reflect types for topic reconstruction.
@@ -92,7 +91,7 @@ func encodeAddress(v reflect.Value) (object.Object, error) {
 		return nil, err
 	}
 
-	return &object.Address{Value: hexutil.Encode(data)}, nil
+	return &object.Address{Value: hex.EncodeToHex(data)}, nil
 }
 
 func readBytes(v reflect.Value) ([]byte, error) {
@@ -118,7 +117,7 @@ func encodeFixedBytes(v reflect.Value) (object.Object, error) {
 		return nil, err
 	}
 
-	return &object.Bytes{Value: hexutil.Encode(data)}, nil
+	return &object.Bytes{Value: hex.EncodeToHex(data)}, nil
 }
 
 func encodeInt(v reflect.Value) (object.Object, error) {
