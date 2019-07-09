@@ -34,7 +34,7 @@ func TestTopicEncoding(t *testing.T) {
 
 	for _, cc := range cases {
 		t.Run("", func(t *testing.T) {
-			tt, err := abi.NewType(cc.Type)
+			tt, err := abi.NewType(cc.Type, nil)
 			if err != nil {
 				t.Fatalf("format name %s is invalid: %v", cc.Type, err)
 			}

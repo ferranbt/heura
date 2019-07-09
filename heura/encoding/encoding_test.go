@@ -91,7 +91,7 @@ func TestEncoding(t *testing.T) {
 
 	for _, cc := range cases {
 		t.Run("", func(t *testing.T) {
-			ttt, err := abi.NewType(cc.Type)
+			ttt, err := abi.NewType(cc.Type, nil)
 			if err != nil {
 				t.Fatal(err.Error())
 			}
