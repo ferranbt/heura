@@ -6,9 +6,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	"github.com/umbracle/heura/heura/object"
+	"github.com/umbracle/minimal/helper/hex"
 )
 
 var (
@@ -104,7 +104,7 @@ func decodeFixedBytes(obj object.Object, t reflect.Type) (interface{}, error) {
 		return nil, decodeErr(obj, "fixed bytes")
 	}
 
-	hex, err := hexutil.Decode(obj.(*object.Bytes).Value)
+	hex, err := hex.DecodeHex(obj.(*object.Bytes).Value)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +145,7 @@ func decodeHash(obj object.Object, t reflect.Type) (interface{}, error) {
 		return nil, decodeErr(obj, "hash")
 	}
 
-	hex, err := hexutil.Decode(obj.(*object.Bytes).Value)
+	hex, err := hex.DecodeHex(obj.(*object.Bytes).Value)
 	if err != nil {
 		return nil, err
 	}

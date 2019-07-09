@@ -6,13 +6,14 @@ import (
 
 	"golang.org/x/crypto/sha3"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 
 	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/umbracle/heura/heura/object"
+	"github.com/umbracle/minimal/helper/hex"
 )
 
 // ParseLog parses the log both topics and data
@@ -151,7 +152,7 @@ func encodeTopic(obj object.Object, t abi.Type, arraySize int) (common.Hash, err
 		}
 
 		topic := common.Hash{}
-		bytes, err := hexutil.Decode(obj.(*object.Bytes).Value)
+		bytes, err := hex.DecodeHex(obj.(*object.Bytes).Value)
 		if err != nil {
 			return common.Hash{}, err
 		}
@@ -195,20 +196,20 @@ func ParseTopic(data []byte, t abi.Type) (object.Object, error) {
 		return &object.Integer{Value: new(big.Int).SetBytes(data)}, nil
 
 	case abi.HashTy:
-		return &object.Bytes{Value: hexutil.Encode(data)}, nil
+		return &object.Bytes{Value: hex.EncodeToHex(data)}, nil
 
 	case abi.AddressTy:
-		return &object.Address{Value: hexutil.Encode(data[common.HashLength-common.AddressLength:])}, nil
+		return &object.Address{Value: hex.EncodeToHex(data[common.HashLength-common.AddressLength:])}, nil
 
 	case abi.FixedBytesTy:
-		return &object.Bytes{Value: hexutil.Encode(data[0:t.Size])}, nil
+		return &object.Bytes{Value: hex.EncodeToHex(data[0:t.Size])}, nil
 
 	case abi.ArrayTy:
 		fallthrough
 
 	case abi.SliceTy:
 		// Arrays are converted into sha3 format https://github.com/ethereum/web3.js/issues/344
-		return &object.Bytes{Value: hexutil.Encode(data)}, nil
+		return &object.Bytes{Value: hex.EncodeToHex(data)}, nil
 
 	default:
 		return nil, fmt.Errorf("Topic parsing of type %s not supported", t.String())

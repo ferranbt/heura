@@ -7,9 +7,9 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	"github.com/umbracle/heura/heura/object"
+	"github.com/umbracle/minimal/helper/hex"
 )
 
 func TestTopicEncoding(t *testing.T) {
@@ -159,7 +159,7 @@ func TestTopicsIntegration(t *testing.T) {
 			tx := &transaction{
 				From: etherbase,
 				To:   &receipt.ContractAddress,
-				Data: hexutil.Encode(append(method.Id(), data...)),
+				Data: hex.EncodeToHex(append(method.Id(), data...)),
 			}
 
 			rr, err := client.SendTxAndWait(tx)

@@ -9,8 +9,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/umbracle/heura/heura/ast"
-
-	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/umbracle/minimal/helper/hex"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -73,7 +72,7 @@ func (b *Bytes) Inspect() string  { return b.Value }
 const ADDRESS_SIZE = 20
 
 func (b *Bytes) ToAddress() (*Address, error) {
-	bb, err := hexutil.Decode(b.Value)
+	bb, err := hex.DecodeHex(b.Value)
 	if err != nil {
 		return nil, err
 	}
@@ -270,7 +269,7 @@ type Instance struct {
 
 func (i *Instance) Type() ObjectType { return INSTANCE_OBJ }
 func (i *Instance) Inspect() string {
-	return fmt.Sprintf("%s(%s)", i.Name, hexutil.Encode(i.Address.Bytes()))
+	return fmt.Sprintf("%s(%s)", i.Name, hex.EncodeToHex(i.Address.Bytes()))
 }
 
 type Account struct {
