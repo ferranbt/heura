@@ -132,4 +132,35 @@ var builtins = map[string]*object.Builtin{
 			return account
 		},
 	},
+
+	"kwei":   conv(3),
+	"mwei":   conv(6),
+	"gwei":   conv(9),
+	"szabo":  conv(12),
+	"finney": conv(15),
+	"ether":  conv(18),
+}
+
+func conv(dec uint64) *object.Builtin {
+	mul := new(big.Int).SetUint64(10)
+	mul = mul.Exp(mul, new(big.Int).SetUint64(dec), nil)
+
+	return &object.Builtin{
+		Fn: func(args ...object.Object) object.Object {
+			if len(args) != 1 {
+				return newError("expected one parameter but found %d", len(args))
+			}
+
+			if args[0].Type() != object.INTEGER_OBJ {
+				return newError("expected number, got %s", args[0].Type())
+			}
+
+			v := args[0].(*object.Integer).Value
+
+			vv := new(big.Int).Set(v)
+			vv = vv.Mul(vv, mul)
+
+			return &object.Integer{Value: vv}
+		},
+	}
 }
