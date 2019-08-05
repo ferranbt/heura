@@ -12,8 +12,7 @@ jobs:
       - checkout
       - run:
           command: |
-            sudo ./scripts/circleci-geth.sh install
-
+            sudo ./scripts/circleci.sh
       - run: go test -v ./...
 
       - save_cache:

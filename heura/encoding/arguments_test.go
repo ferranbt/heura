@@ -5,23 +5,36 @@ import (
 	"fmt"
 	"math/big"
 	"reflect"
+	"strings"
 	"testing"
 
 	ethereum "github.com/ethereum/go-ethereum"
 	"github.com/umbracle/heura/heura/object"
 )
 
-var argumentsTemplate = `pragma solidity ^0.4.22;
+var argumentsTemplate = `pragma solidity ^0.5.5;
 
 contract Sample {
 	{{range $indx, $case := .}}
-	function set{{$indx}}({{range $indx, $c := $case}}{{$c.Type}} val{{$indx}}, {{end}}) 
-		view returns ({{range $indx, $c := $case}}{{$c.Type}}, {{end}}){
+	function set{{$indx}}({{range $indx, $c := $case}}{{$c.TypeStr}} val{{$indx}}, {{end}}) 
+		view public returns ({{range $indx, $c := $case}}{{$c.TypeStr}}, {{end}}) {
 		return ({{range $indx, $c := $case}}val{{$indx}}, {{end}});
 	}
 	{{end}}
 }
 `
+
+type attr struct {
+	Type  string
+	Value object.Object
+}
+
+func (a *attr) TypeStr() string {
+	if a.Type == "string" || strings.Contains(a.Type, "[") {
+		return a.Type + " memory"
+	}
+	return a.Type
+}
 
 func TestArgumentsIntegration(t *testing.T) {
 	client := newClient()
@@ -33,12 +46,7 @@ func TestArgumentsIntegration(t *testing.T) {
 
 	etherbase := accounts[0]
 
-	type Attr struct {
-		Type  string
-		Value object.Object
-	}
-
-	cases := [][]*Attr{
+	cases := [][]*attr{
 		{
 			{"int", &object.Integer{Value: big.NewInt(1)}},
 			{"int", &object.Integer{Value: big.NewInt(1)}},
