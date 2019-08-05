@@ -1,9 +1,7 @@
 package repl
 
 import (
-	"bufio"
 	"fmt"
-	"io"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -11,6 +9,8 @@ import (
 	"github.com/umbracle/heura/heura/lexer"
 	"github.com/umbracle/heura/heura/object"
 	"github.com/umbracle/heura/heura/parser"
+
+	prompt "github.com/c-bata/go-prompt"
 )
 
 // RootCmd returns the repl command
@@ -26,44 +26,41 @@ func rootRun(cmd *cobra.Command, args []string) {
 	env.BuildArgs(args)
 	env.Set("endpoint", &object.String{Value: "https://mainnet.infura.io"})
 
-	start(os.Stdin, os.Stdout, env)
+	p := prompt.New(
+		executor(env),
+		completer,
+		prompt.OptionPrefix(">> "),
+		prompt.OptionAddKeyBind(quit),
+	)
+	p.Run()
 }
 
-const prompt = ">> "
+func completer(in prompt.Document) []prompt.Suggest {
+	return nil
+}
 
-func start(in io.Reader, out io.Writer, env *object.Environment) {
-	scanner := bufio.NewScanner(in)
-
-	for {
-		fmt.Printf(prompt)
-		scanned := scanner.Scan()
-		if !scanned {
-			return
-		}
-
-		line := scanner.Text()
-		l := lexer.New(line)
-		p := parser.New(l)
+func executor(env *object.Environment) func(s string) {
+	return func(s string) {
+		p := parser.New(lexer.New(s))
 
 		program := p.ParseProgram()
 		if len(p.Errors()) != 0 {
-			printParserErrors(out, p.Errors())
-			continue
-		}
-
-		evaluated := evaluator.Eval(program, env)
-
-		if evaluated != nil {
-			io.WriteString(out, evaluated.Inspect())
-			io.WriteString(out, "\n")
+			fmt.Printf("  parser errors:\n")
+			for _, msg := range p.Errors() {
+				fmt.Printf("\t" + msg + "\n")
+			}
+		} else {
+			evaluated := evaluator.Eval(program, env)
+			if evaluated != nil {
+				fmt.Println(evaluated.Inspect())
+			}
 		}
 	}
 }
 
-func printParserErrors(out io.Writer, errors []string) {
-	io.WriteString(out, "  parser errors:\n")
-
-	for _, msg := range errors {
-		io.WriteString(out, "\t"+msg+"\n")
-	}
+var quit = prompt.KeyBind{
+	Key: prompt.ControlC,
+	Fn: func(b *prompt.Buffer) {
+		os.Exit(0)
+	},
 }
