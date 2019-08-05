@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -58,26 +59,34 @@ func TestTopicEncoding(t *testing.T) {
 	}
 }
 
-var topicTemplate = `pragma solidity ^0.4.22;
+var topicTemplate = `pragma solidity ^0.5.5;
 
 contract Sample {
 	{{range $indx, $case := .}}
 	event Event{{$indx}}({{range $indx, $c := $case}}{{$c.Type}}{{if $c.Indexed}} indexed{{end}} val{{$indx}}, {{end}});
-	function set{{$indx}}({{range $indx, $c := $case}}{{$c.Type}} val{{$indx}}, {{end}}) {
+	function set{{$indx}}({{range $indx, $c := $case}}{{$c.TypeStr}} val{{$indx}}, {{end}}) public {
 		emit Event{{$indx}}({{range $indx, $c := $case}}val{{$indx}}, {{end}});
 	}
 	{{end}}
 }
 `
 
-func TestTopicsIntegration(t *testing.T) {
-	type Attr struct {
-		Type    string
-		Value   object.Object
-		Indexed bool
-	}
+type attrTopic struct {
+	Type    string
+	Value   object.Object
+	Indexed bool
+}
 
-	cases := [][]*Attr{
+func (a *attrTopic) TypeStr() string {
+	if a.Type == "string" || strings.Contains(a.Type, "[") {
+		return a.Type + " memory"
+	}
+	return a.Type
+}
+
+func TestTopicsIntegration(t *testing.T) {
+
+	cases := [][]*attrTopic{
 		{
 			{"int", &object.Integer{Value: big.NewInt(1)}, true},
 			{"int", &object.Integer{Value: big.NewInt(1)}, false},
