@@ -235,6 +235,28 @@ type Hash struct {
 	Pairs map[HashKey]HashPair
 }
 
+func (h *Hash) SetString(str string, obj Object) {
+	if h.Pairs == nil {
+		h.Pairs = map[HashKey]HashPair{}
+	}
+
+	k := &String{Value: str}
+	h.Pairs[k.HashKey()] = HashPair{
+		Key:   k,
+		Value: obj,
+	}
+}
+
+func (h *Hash) GetString(str string) (Object, bool) {
+	k := &String{Value: str}
+
+	v, ok := h.Pairs[k.HashKey()]
+	if !ok {
+		return nil, false
+	}
+	return v.Value, true
+}
+
 func (h *Hash) Type() ObjectType { return HASH_OBJ }
 func (h *Hash) Inspect() string {
 	var out bytes.Buffer

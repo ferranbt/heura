@@ -9,6 +9,23 @@ import (
 	"github.com/umbracle/heura/heura/lexer"
 )
 
+func TestOnStatements(t *testing.T) {
+	tests := []struct {
+		input string
+	}{
+		{"on ERC20.Transfer(x=1) {}"},
+		{"on ERC20(\"\").Transfer() {}"},
+	}
+
+	for _, tt := range tests {
+		l := lexer.New(tt.input)
+		p := New(l)
+
+		p.ParseProgram()
+		checkParserErrors(t, p)
+	}
+}
+
 func TestArtifactStatement(t *testing.T) {
 	tests := []struct {
 		input   string

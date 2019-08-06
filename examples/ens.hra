@@ -1,0 +1,4 @@
+
+import "ens"
+
+print (ens.Resolve("dentacoin.eth"))

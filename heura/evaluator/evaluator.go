@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/umbracle/heura/builtin"
 	"github.com/umbracle/heura/heura/ast"
 	"github.com/umbracle/heura/heura/encoding"
 	"github.com/umbracle/heura/heura/token"
@@ -33,6 +34,16 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 	case *ast.ExpressionStatement:
 		return Eval(node.Expression, env)
 
+	case *ast.ImportStatement:
+		for _, imp := range node.Folders {
+			name := imp.(*ast.StringLiteral).Value
+			plugin, ok := builtin.BuiltinPlugins[name]
+			if !ok {
+				return newError("import %s not found", name)
+			}
+			env.Set(name, plugin())
+		}
+
 	case *ast.ArtifactStatement:
 		abis, err := ethereum.ReadArtifacts(node.Folders)
 		if err != nil {
@@ -58,27 +69,33 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 			return newError("contract not found")
 		}
 
-		cc, ok := c.(*object.Contract)
-		if !ok {
-			return newError("object found but its no contract")
+		event := &object.Event{
+			Contract:   contract,
+			Method:     method,
+			Parameters: params,
+			Body:       body,
+			Env:        env,
 		}
 
-		m, ok := cc.ABI.Events[method]
+		switch obj := c.(type) {
+		case *object.Contract:
+			event.ABI = obj.ABI
+		case *object.Instance:
+			if node.Address != nil {
+				return newError("cannot have address here")
+			}
+
+			event.ABI = obj.ABI
+			event.Address = &obj.Address
+		}
+
+		m, ok := event.ABI.Events[method]
 		if !ok {
 			return newError("Method not found for event")
 		}
 
 		if len(m.Inputs) != len(params) {
 			return newError("Event len different %d and %d", len(m.Inputs), len(params))
-		}
-
-		event := &object.Event{
-			Contract:   contract,
-			Method:     method,
-			ABI:        cc.ABI,
-			Parameters: params,
-			Body:       body,
-			Env:        env,
 		}
 
 		// Check if we listen for a specific address
@@ -276,6 +293,14 @@ func evalDotIndexExpression(env *object.Environment, left object.Object, index a
 		case *ast.IndexExpression:
 			left = evalHashIndexExpression(left, &object.String{Value: obj.Left.(*ast.Identifier).Value})
 			return evalDotIndexExpression(env, left, obj.Index)
+		case *ast.CallExpression:
+			ff := left.(*object.Hash)
+			call, ok := ff.GetString(obj.Function.String())
+			if !ok {
+				panic("Y")
+			}
+			args := evalExpressions(obj.Arguments, env)
+			return ApplyFunction(env, call, args)
 		}
 		return newError("Dot access to hash object requires an identifier")
 

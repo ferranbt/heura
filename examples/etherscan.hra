@@ -1,0 +1,10 @@
+
+import (
+    "etherscan"
+)
+
+let ZEROX = etherscan.Contract("0xe41d2489571d322189246dafa5ebde1f4699f498")
+
+on ZEROX.Transfer(from, to, value) {
+    print("- transfer -")
+}
