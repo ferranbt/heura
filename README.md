@@ -119,3 +119,37 @@ fn some_function() {
 
 let x, y := some_function()
 ```
+
+### Libraries
+
+### Etherscan
+
+Query a specific contract on Etherscan:
+
+```
+import "etherscan"
+
+print(ens.Contract("0x..."))
+```
+
+Fetch ABIs from Etherscan:
+
+```
+import "etherscan"
+
+let Contract = ens.Contract("0x")
+
+on Contract.Transfer(from, to, value) {
+
+}
+```
+
+### Ens
+
+Resolve an ENS address:
+
+```
+import "ens"
+
+print(ens.Resolve("address.eth"))
+```
