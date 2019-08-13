@@ -41,7 +41,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 			if !ok {
 				return newError("import %s not found", name)
 			}
-			env.Set(name, plugin())
+			env.Set(name, plugin(env))
 		}
 
 	case *ast.ArtifactStatement:
@@ -304,8 +304,10 @@ func evalDotIndexExpression(env *object.Environment, left object.Object, index a
 		}
 		return newError("Dot access to hash object requires an identifier")
 
-	case left.Type() == object.ACCOUNT_OBJ:
-		return evalAccountCall(left.(*object.Account), index, env)
+	/*
+		case left.Type() == object.ACCOUNT_OBJ:
+			return evalAccountCall(left.(*object.Account), index, env)
+	*/
 
 	case left.Type() == object.INSTANCE_OBJ:
 		return evalInstanceCall(left.(*object.Instance), index, env)
@@ -352,6 +354,7 @@ func evalAddress(env *object.Environment, obj object.Object) (*object.Address, e
 	return address, nil
 }
 
+/*
 func evalAccountCall(account *object.Account, expr ast.Expression, env *object.Environment) object.Object {
 	call, ok := expr.(*ast.CallExpression)
 	if !ok {
@@ -389,6 +392,7 @@ func evalAccountCall(account *object.Account, expr ast.Expression, env *object.E
 		return newError("Unknown account method: %s", name.Value)
 	}
 }
+*/
 
 func evalInstanceCall(instance *object.Instance, expr ast.Expression, env *object.Environment) object.Object {
 	call, ok := expr.(*ast.CallExpression)

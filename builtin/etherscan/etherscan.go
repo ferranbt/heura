@@ -81,7 +81,7 @@ func getContractBuiltin(args ...object.Object) object.Object {
 }
 
 // Factory is the factory method for the Etherscan backend
-func Factory() object.Object {
+func Factory(env *object.Environment) object.Object {
 	h := &object.Hash{}
 
 	h.SetString("ABI", &object.Builtin{

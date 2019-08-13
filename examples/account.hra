@@ -1,5 +1,7 @@
 
-let a = Account(0x014d98f02dd38e287c3d6a5bf9356c6502c58a49)
+import "account"
+
+let a = account(0x014d98f02dd38e287c3d6a5bf9356c6502c58a49)
 
 print (a.balance())
 print (a.nonce())

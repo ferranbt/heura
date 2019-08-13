@@ -118,20 +118,22 @@ var builtins = map[string]*object.Builtin{
 		},
 	},
 
-	"Account": &object.Builtin{
-		Fn: func(args ...object.Object) object.Object {
-			if len(args) != 1 {
-				return newError("expected one parameter but found %d", len(args))
-			}
+	/*
+		"Account": &object.Builtin{
+			Fn: func(args ...object.Object) object.Object {
+				if len(args) != 1 {
+					return newError("expected one parameter but found %d", len(args))
+				}
 
-			account, err := object.NewAccount(args[0])
-			if err != nil {
-				return newError(err.Error())
-			}
+				account, err := object.NewAccount(args[0])
+				if err != nil {
+					return newError(err.Error())
+				}
 
-			return account
+				return account
+			},
 		},
-	},
+	*/
 
 	"kwei":   conv(3),
 	"mwei":   conv(6),

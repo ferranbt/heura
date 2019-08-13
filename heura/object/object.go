@@ -17,9 +17,9 @@ import (
 type ObjectType string
 
 const (
-	INSTANCE_OBJ     = "INSTANCE"
-	CONTRACT_OBJ     = "CONTRACT"
-	ACCOUNT_OBJ      = "ACCOUNT"
+	INSTANCE_OBJ = "INSTANCE"
+	CONTRACT_OBJ = "CONTRACT"
+	// ACCOUNT_OBJ      = "ACCOUNT"
 	MULTIPLE_OBJ     = "MULTIPLE"
 	INTEGER_OBJ      = "INTEGER"
 	BOOLEAN_OBJ      = "BOOLEAN"
@@ -294,6 +294,7 @@ func (i *Instance) Inspect() string {
 	return fmt.Sprintf("%s(%s)", i.Name, hex.EncodeToHex(i.Address.Bytes()))
 }
 
+/*
 type Account struct {
 	Addr common.Address
 }
@@ -323,3 +324,4 @@ func NewAccount(obj Object) (*Account, error) {
 		Addr: addr,
 	}, nil
 }
+*/

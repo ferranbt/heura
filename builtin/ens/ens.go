@@ -32,7 +32,7 @@ func resolve(args ...object.Object) object.Object {
 }
 
 // Factory is the factory method for the ENS backend
-func Factory() object.Object {
+func Factory(env *object.Environment) object.Object {
 	h := &object.Hash{}
 	h.SetString("Resolve", &object.Builtin{
 		Fn: resolve,
