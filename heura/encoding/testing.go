@@ -1,19 +1,12 @@
 package encoding
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"fmt"
 	"os"
-	"strings"
 	"time"
 
-	"github.com/alecthomas/template"
 	ethereum "github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/compiler"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	ethrpc "github.com/ethereum/go-ethereum/rpc"
@@ -32,10 +25,6 @@ type ethClient struct {
 	gasLimit string
 }
 
-func newClient() *ethClient {
-	return newClientWithEndpoint("http://localhost:8545")
-}
-
 func newClientWithEndpoint(endpoint string) *ethClient {
 	rpc, err := ethrpc.Dial(endpoint)
 	if err != nil {
@@ -43,12 +32,6 @@ func newClientWithEndpoint(endpoint string) *ethClient {
 	}
 
 	return &ethClient{ethclient.NewClient(rpc), rpc, defaultGasPrice, defaultGasLimit}
-}
-
-func (c *ethClient) listAccounts() ([]common.Address, error) {
-	var accounts []common.Address
-	err := c.rpc.Call(&accounts, "eth_accounts")
-	return accounts, err
 }
 
 func (c *ethClient) sendTx(tx *transaction) (*transactionResult, error) {
@@ -103,57 +86,6 @@ func (t *transactionResult) Wait() (*types.Receipt, error) {
 
 		time.Sleep(500 * time.Millisecond)
 	}
-}
-
-func compileAndDeployTemplate(templateStr string, params interface{}, deployer common.Address, client *ethClient) (*abi.ABI, *types.Receipt, error) {
-	tmpl, err := template.New("").Parse(templateStr)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	buf := new(bytes.Buffer)
-	if err = tmpl.Execute(buf, params); err != nil {
-		return nil, nil, err
-	}
-
-	source := buf.String()
-	source = strings.Replace(source, ", )", ")", -1) // remove trailing commas
-
-	data, err := compiler.CompileSolidityString("solc", source)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	if len(data) != 1 {
-		return nil, nil, fmt.Errorf("Expected one contract but found %d", len(data))
-	}
-
-	contract, ok := data["<stdin>:Sample"]
-	if !ok {
-		return nil, nil, fmt.Errorf("Expected the contract to be called Sample")
-	}
-
-	abiStr, err := json.Marshal(contract.Info.AbiDefinition)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	abi, err := abi.JSON(bytes.NewReader(abiStr))
-	if err != nil {
-		return nil, nil, err
-	}
-
-	tx := &transaction{
-		From: deployer,
-		Data: contract.Code,
-	}
-
-	rr, err := client.SendTxAndWait(tx)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return &abi, rr, nil
 }
 
 func random() bool {

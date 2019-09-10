@@ -18,7 +18,8 @@ require (
 	github.com/rjeczalik/notify v0.9.2 // indirect
 	github.com/rs/cors v1.6.0 // indirect
 	github.com/spf13/cobra v0.0.5
+	github.com/umbracle/go-web3 v0.0.0-20190910085040-4cc1cc5e7667
 	github.com/umbracle/minimal v0.0.0-20190718150121-48cb298ff487
-	golang.org/x/crypto v0.0.0-20190605123033-f99c8df09eb5
+	golang.org/x/crypto v0.0.0-20190829043050-9756ffdc2472
 	gopkg.in/urfave/cli.v1 v1.20.0 // indirect
 )

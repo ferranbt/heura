@@ -1,14 +1,18 @@
 package encoding
 
 import (
+	"bytes"
 	"fmt"
 	"math/big"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/umbracle/go-web3/testutil"
 	"github.com/umbracle/heura/heura/object"
 	"github.com/umbracle/minimal/helper/hex"
 )
@@ -58,18 +62,6 @@ func TestTopicEncoding(t *testing.T) {
 		})
 	}
 }
-
-var topicTemplate = `pragma solidity ^0.5.5;
-
-contract Sample {
-	{{range $indx, $case := .}}
-	event Event{{$indx}}({{range $indx, $c := $case}}{{$c.Type}}{{if $c.Indexed}} indexed{{end}} val{{$indx}}, {{end}});
-	function set{{$indx}}({{range $indx, $c := $case}}{{$c.TypeStr}} val{{$indx}}, {{end}}) public {
-		emit Event{{$indx}}({{range $indx, $c := $case}}val{{$indx}}, {{end}});
-	}
-	{{end}}
-}
-`
 
 type attrTopic struct {
 	Type    string
@@ -128,18 +120,27 @@ func TestTopicsIntegration(t *testing.T) {
 		},
 	}
 
-	client := newClient()
-
-	accounts, err := client.listAccounts()
-	if err != nil {
-		t.Skipf("Client not responding, skip integration test")
+	// create event contract
+	cc := &testutil.Contract{}
+	for indx, i := range cases {
+		evnt := testutil.NewEvent("Event" + strconv.Itoa(indx))
+		for _, attr := range i {
+			evnt.Add(attr.Type, attr.Indexed)
+		}
+		cc.AddEvent(evnt)
 	}
 
-	etherbase := accounts[0]
+	server := testutil.NewTestServer(t, nil)
+	defer server.Close()
 
-	abi, receipt, err := compileAndDeployTemplate(topicTemplate, cases, etherbase, client)
+	solcContract, addr := server.DeployContract(cc)
+
+	etherbase := common.HexToAddress(server.Account(0))
+	client := newClientWithEndpoint(server.HTTPAddr())
+
+	abi, err := abi.JSON(bytes.NewReader([]byte(solcContract.Abi)))
 	if err != nil {
-		t.Fatalf("failed to compile and deploy contract: %v", err)
+		t.Fatal(err)
 	}
 
 	for indx, cc := range cases {
@@ -150,9 +151,9 @@ func TestTopicsIntegration(t *testing.T) {
 				values = append(values, i.Value)
 			}
 
-			method, ok := abi.Methods[fmt.Sprintf("set%d", indx)]
+			method, ok := abi.Methods[fmt.Sprintf("setterEvent%d", indx)]
 			if !ok {
-				t.Fatalf("method %s not found", fmt.Sprintf("set%d", indx))
+				t.Fatalf("method %s not found", fmt.Sprintf("setterEvent%d", indx))
 			}
 
 			event, ok := abi.Events[fmt.Sprintf("Event%d", indx)]
@@ -165,9 +166,10 @@ func TestTopicsIntegration(t *testing.T) {
 				t.Fatalf("failed to pack: %v", err)
 			}
 
+			addr0 := common.HexToAddress(addr)
 			tx := &transaction{
 				From: etherbase,
-				To:   &receipt.ContractAddress,
+				To:   &addr0,
 				Data: hex.EncodeToHex(append(method.Id(), data...)),
 			}
 
