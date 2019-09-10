@@ -1,28 +1,20 @@
 package encoding
 
 import (
-	"context"
+	"bytes"
 	"fmt"
 	"math/big"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 
-	ethereum "github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/umbracle/go-web3"
+	"github.com/umbracle/go-web3/testutil"
 	"github.com/umbracle/heura/heura/object"
+	"github.com/umbracle/minimal/helper/hex"
 )
-
-var argumentsTemplate = `pragma solidity ^0.5.5;
-
-contract Sample {
-	{{range $indx, $case := .}}
-	function set{{$indx}}({{range $indx, $c := $case}}{{$c.TypeStr}} val{{$indx}}, {{end}}) 
-		view public returns ({{range $indx, $c := $case}}{{$c.TypeStr}}, {{end}}) {
-		return ({{range $indx, $c := $case}}val{{$indx}}, {{end}});
-	}
-	{{end}}
-}
-`
 
 type attr struct {
 	Type  string
@@ -37,15 +29,6 @@ func (a *attr) TypeStr() string {
 }
 
 func TestArgumentsIntegration(t *testing.T) {
-	client := newClient()
-
-	accounts, err := client.listAccounts()
-	if err != nil {
-		t.Skipf("Client not responding, skip integration test")
-	}
-
-	etherbase := accounts[0]
-
 	cases := [][]*attr{
 		{
 			{"int", &object.Integer{Value: big.NewInt(1)}},
@@ -70,9 +53,23 @@ func TestArgumentsIntegration(t *testing.T) {
 		},
 	}
 
-	abi, receipt, err := compileAndDeployTemplate(argumentsTemplate, cases, etherbase, client)
+	cc := &testutil.Contract{}
+	for indx, i := range cases {
+		args := []string{}
+		for _, j := range i {
+			args = append(args, j.TypeStr())
+		}
+		cc.AddDualCaller("set"+strconv.Itoa(indx), args...)
+	}
+
+	server := testutil.NewTestServer(t, nil)
+	defer server.Close()
+
+	solcContract, addr := server.DeployContract(cc)
+
+	abi, err := abi.JSON(bytes.NewReader([]byte(solcContract.Abi)))
 	if err != nil {
-		t.Fatalf("failed to compile and deploy contract: %v", err)
+		t.Fatal(err)
 	}
 
 	for indx, cc := range cases {
@@ -92,19 +89,17 @@ func TestArgumentsIntegration(t *testing.T) {
 				t.Fatalf("failed to pack: %v", err)
 			}
 
-			msg := ethereum.CallMsg{
-				From: etherbase,
-				To:   &receipt.ContractAddress,
-				Data: append(method.Id(), data...),
+			msg := &web3.CallMsg{
+				To:   addr,
+				Data: hex.EncodeToHex(append(method.Id(), data...)),
 			}
-
-			resp, err := client.CallContract(context.Background(), msg, nil)
+			raw, err := server.Call(msg)
 			if err != nil {
-				t.Fatalf("failed to call contract: %v", err)
+				t.Fatal(err)
 			}
 
 			// actually inputs and outputs are the same
-			result, err := Unpack(method.Outputs, resp)
+			result, err := Unpack(method.Outputs, hex.MustDecodeHex(raw))
 			if err != nil {
 				t.Fatalf("failed to unpack: %v", err)
 			}
