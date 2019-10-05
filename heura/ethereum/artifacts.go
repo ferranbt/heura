@@ -6,7 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/umbracle/go-web3/abi"
+
 	"github.com/umbracle/heura/heura/ast"
 	builtin_contracts "github.com/umbracle/heura/heura/ethereum/builtin"
 )
@@ -30,13 +31,7 @@ func readFileArtifact(path string) (*abi.ABI, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	artifact := &abi.ABI{}
-	if err := artifact.UnmarshalJSON([]byte(data)); err != nil {
-		return nil, err
-	}
-
-	return artifact, nil
+	return abi.NewABI(string(data))
 }
 
 func ReadArtifacts(exprs []ast.Expression) (map[string]*abi.ABI, error) {

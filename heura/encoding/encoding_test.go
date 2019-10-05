@@ -5,18 +5,14 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/umbracle/go-web3"
+	"github.com/umbracle/go-web3/abi"
 	"github.com/umbracle/heura/heura/object"
 )
 
 var (
 	Address = "0x1111111111111111111111111111111111111111"
 )
-
-func mustDecode(s string) common.Address {
-	return common.HexToAddress(s)
-}
 
 func TestEncoding(t *testing.T) {
 	var cases = []struct {
@@ -34,6 +30,7 @@ func TestEncoding(t *testing.T) {
 			"bytes2",
 			[2]byte{16, 0},
 		},
+
 		{
 			&object.Array{Elements: []object.Object{&object.Integer{Value: big.NewInt(1)}}},
 			"int256[]",
@@ -60,7 +57,7 @@ func TestEncoding(t *testing.T) {
 		{
 			&object.Address{Value: Address},
 			"address",
-			mustDecode(Address),
+			web3.HexToAddress(Address),
 		},
 		{
 			&object.Array{
@@ -70,7 +67,10 @@ func TestEncoding(t *testing.T) {
 				},
 			},
 			"address[]",
-			[]common.Address{mustDecode(Address), mustDecode(Address)},
+			[]web3.Address{
+				web3.HexToAddress(Address),
+				web3.HexToAddress(Address),
+			},
 		},
 		{
 			&object.Array{
@@ -91,12 +91,12 @@ func TestEncoding(t *testing.T) {
 
 	for _, cc := range cases {
 		t.Run("", func(t *testing.T) {
-			ttt, err := abi.NewType(cc.Type, nil)
+			ttt, err := abi.NewType(cc.Type)
 			if err != nil {
 				t.Fatal(err.Error())
 			}
 
-			obj, err := Decode(cc.Input, ttt)
+			obj, err := Decode(cc.Input, *ttt)
 			if err != nil {
 				t.Fatal(err.Error())
 			}
@@ -105,7 +105,7 @@ func TestEncoding(t *testing.T) {
 				t.Fatal("bad decoding")
 			}
 
-			obj2, err := Encode(obj, ttt)
+			obj2, err := Encode(obj, *ttt)
 			if err != nil {
 				t.Fatal(err.Error())
 			}
