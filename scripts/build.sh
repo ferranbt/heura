@@ -21,7 +21,7 @@ GO_LDFLAGS="-X github.com/umbracle/heura/version.GitCommit=${GIT_COMMIT}"
 
 # Determine the arch/os combos we're building for
 XC_ARCH=${XC_ARCH:-"amd64"}
-XC_OS=${XC_OS:-"linux"}
+XC_OS=${XC_OS:-"linux darwin windows"}
 
 # Delete the old dir
 echo "==> Removing old directory..."
