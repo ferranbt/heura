@@ -7,11 +7,10 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/umbracle/go-web3"
+	"github.com/umbracle/go-web3/abi"
+	"github.com/umbracle/heura/helper/hex"
 	"github.com/umbracle/heura/heura/ast"
-	"github.com/umbracle/minimal/helper/hex"
-
-	"github.com/ethereum/go-ethereum/common"
 )
 
 type ObjectType string
@@ -95,8 +94,8 @@ type Address struct {
 func (a *Address) Type() ObjectType { return ADDRESS_OBJ }
 func (a *Address) Inspect() string  { return a.Value }
 
-func (a *Address) ToAddress() common.Address {
-	return common.HexToAddress(a.Value)
+func (a *Address) ToAddress() web3.Address {
+	return web3.HexToAddress(a.Value)
 }
 
 type Null struct{}
@@ -121,7 +120,7 @@ func (e *Error) Inspect() string  { return "ERROR: " + e.Message }
 type Event struct {
 	Contract   string
 	Method     string
-	Address    *common.Address
+	Address    *web3.Address
 	ABI        *abi.ABI
 	Parameters []*ast.OnIdentifier
 	Body       *ast.BlockStatement
@@ -285,24 +284,24 @@ func (c *Contract) Inspect() string  { return fmt.Sprintf("%s", c.Name) }
 
 type Instance struct {
 	Name    string
-	Address common.Address
+	Address web3.Address
 	ABI     *abi.ABI
 }
 
 func (i *Instance) Type() ObjectType { return INSTANCE_OBJ }
 func (i *Instance) Inspect() string {
-	return fmt.Sprintf("%s(%s)", i.Name, hex.EncodeToHex(i.Address.Bytes()))
+	return fmt.Sprintf("%s(%s)", i.Name, hex.EncodeToHex(i.Address[:]))
 }
 
 type Account struct {
-	Addr common.Address
+	Addr web3.Address
 }
 
 func (a *Account) Type() ObjectType { return ACCOUNT_OBJ }
 func (a *Account) Inspect() string  { return fmt.Sprintf("address: %s", a.Addr.String()) }
 
 func NewAccount(obj Object) (*Account, error) {
-	var addr common.Address
+	var addr web3.Address
 
 	switch obj.Type() {
 	case BYTES_OBJ:

@@ -1,22 +1,21 @@
 package evaluator
 
 import (
-	"context"
 	"encoding/hex"
 	"fmt"
 	"math/big"
 
+	"github.com/umbracle/go-web3"
+	"github.com/umbracle/go-web3/abi"
+	"github.com/umbracle/go-web3/jsonrpc"
+
 	"github.com/umbracle/heura/builtin"
+	"github.com/umbracle/heura/builtin/ens"
 	"github.com/umbracle/heura/heura/ast"
 	"github.com/umbracle/heura/heura/encoding"
-	"github.com/umbracle/heura/heura/token"
-
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/contracts/ens"
-
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/umbracle/heura/heura/ethereum"
 	"github.com/umbracle/heura/heura/object"
+	"github.com/umbracle/heura/heura/token"
 )
 
 var (
@@ -110,23 +109,34 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 			event.Address = &i
 		}
 
-		// TODO. Check for specific topics
-		topicObjs := []object.Object{}
-		topicArgs := abi.Arguments{}
+		objs := []object.Object{}
+		args := abi.Arguments{}
 
 		for indx, i := range m.Inputs {
 			if i.Indexed {
-				topicObjs = append(topicObjs, Eval(params[indx].Value, env))
-				topicArgs = append(topicArgs, i)
+				objs = append(objs, Eval(params[indx].Value, env))
+				args = append(args, i)
 			}
 		}
 
-		topics, err := encoding.EncodeTopics(topicArgs, topicObjs)
-		if err != nil {
-			return newError(err.Error())
+		topics := []*web3.Hash{}
+		for indx, arg := range args {
+			if objs[indx] == nil {
+				topics = append(topics, nil)
+			} else {
+				input, err := encoding.Decode(objs[indx], *arg.Type)
+				if err != nil {
+					panic(err)
+				}
+				topic, err := abi.EncodeTopic(arg.Type, input)
+				if err != nil {
+					panic(err)
+				}
+				topics = append(topics, &topic)
+			}
 		}
 
-		fmt.Println("-- encoded topics --")
+		fmt.Println("-- topics --")
 		fmt.Println(topics)
 
 		env.Set(fmt.Sprintf("%s_%s", contract, method), event)
@@ -324,27 +334,18 @@ func evalAddress(env *object.Environment, obj object.Object) (*object.Address, e
 			return nil, fmt.Errorf("failed to convert bytes to address: %v", err)
 		}
 		address = addr
+
 	case *object.Address:
 		address = arg
+
 	case *object.String:
 		// Ens resolve
-
-		endpoint, err := env.GetRPCEndpoint()
-		if err != nil {
-			return nil, err
+		var ok bool
+		address, ok = ens.Resolve(arg).(*object.Address)
+		if !ok {
+			return nil, fmt.Errorf("failed to resolve ens")
 		}
 
-		ens, err := ethereum.NewENS(endpoint, ens.MainNetAddress)
-		if err != nil {
-			return nil, err
-		}
-
-		addr, err := ens.Resolve(arg.Value)
-		if err != nil {
-			return nil, err
-		}
-
-		address = &object.Address{Value: addr.String()}
 	default:
 		return nil, fmt.Errorf("not address type found")
 	}
@@ -368,18 +369,18 @@ func evalAccountCall(account *object.Account, expr ast.Expression, env *object.E
 		return newError(err.Error())
 	}
 
-	client := ethereum.NewClient(rpcEndpoint)
+	c, _ := jsonrpc.NewClient(rpcEndpoint)
 
 	switch name.Value {
 	case "nonce":
-		nonce, err := client.NonceAt(context.Background(), account.Addr, nil)
+		nonce, err := c.Eth().GetNonce(account.Addr, web3.Latest)
 		if err != nil {
 			return newError(err.Error())
 		}
 		return &object.Integer{Value: big.NewInt(int64(nonce))}
 
 	case "balance":
-		balance, err := client.BalanceAt(context.Background(), account.Addr, nil)
+		balance, err := c.Eth().GetBalance(account.Addr, web3.Latest)
 		if err != nil {
 			return newError(err.Error())
 		}
@@ -411,9 +412,34 @@ func evalInstanceCall(instance *object.Instance, expr ast.Expression, env *objec
 		return newError(err.Error())
 	}
 
-	contract := ethereum.NewContract(instance.ABI, ethereum.NewClient(rpcEndpoint), instance.Address)
+	client, _ := jsonrpc.NewClient(rpcEndpoint)
 
-	result, err := contract.Call(context.Background(), name.Value, args)
+	method, ok := instance.ABI.Methods[name.Value]
+	if !ok {
+		return newError(fmt.Sprintf("method %s not found", name.Value))
+	}
+
+	data, err := encoding.Pack(method.Inputs, args)
+	if err != nil {
+		return newError(err.Error())
+	}
+
+	msg := &web3.CallMsg{
+		To:   instance.Address,
+		Data: append(method.ID(), data...),
+	}
+
+	rawStr, err := client.Eth().Call(msg, web3.Latest)
+	if err != nil {
+		return newError(err.Error())
+	}
+
+	// Decode output
+	raw, err := hex.DecodeString(rawStr[2:])
+	if err != nil {
+		return newError(err.Error())
+	}
+	result, err := encoding.Unpack(method.Outputs, raw)
 	if err != nil {
 		return newError(err.Error())
 	}
@@ -690,7 +716,7 @@ func isError(obj object.Object) bool {
 	return false
 }
 
-func encodeThisObject(log *types.Log, event object.Event) object.Object {
+func encodeThisObject(log *web3.Log, event object.Event) object.Object {
 	pairs := make(map[object.HashKey]object.HashPair)
 
 	encodePair := func(keyName string, value object.Object) {
@@ -701,8 +727,8 @@ func encodeThisObject(log *types.Log, event object.Event) object.Object {
 	}
 
 	encodePair("blocknumber", &object.Integer{Value: big.NewInt(int64(log.BlockNumber))})
-	encodePair("blockhash", &object.String{Value: hex.EncodeToString(log.BlockHash.Bytes())})
-	encodePair("txhash", &object.String{Value: hex.EncodeToString(log.TxHash.Bytes())})
+	encodePair("blockhash", &object.String{Value: hex.EncodeToString(log.BlockHash[:])})
+	encodePair("txhash", &object.String{Value: hex.EncodeToString(log.TransactionHash[:])})
 	encodePair("obj", &object.Instance{
 		Name:    "", // dont need the name here
 		Address: log.Address,
@@ -713,7 +739,7 @@ func encodeThisObject(log *types.Log, event object.Event) object.Object {
 }
 
 // ApplyEvent runs the event. TODO. support this object
-func ApplyEvent(event object.Event, args []object.Object, log *types.Log) (object.Object, error) {
+func ApplyEvent(event object.Event, args []object.Object, log *web3.Log) (object.Object, error) {
 	// extend env with args
 	env := object.NewEnclosedEnvironment(event.Env)
 

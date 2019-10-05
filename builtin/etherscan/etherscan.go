@@ -6,8 +6,9 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/umbracle/go-web3"
+	"github.com/umbracle/go-web3/abi"
+
 	"github.com/umbracle/heura/heura/object"
 )
 
@@ -44,11 +45,7 @@ func getABI(contract string) (*abi.ABI, error) {
 		return nil, err
 	}
 
-	var abi *abi.ABI
-	if err := json.Unmarshal([]byte(out.Result), &abi); err != nil {
-		return nil, err
-	}
-	return abi, nil
+	return abi.NewABI(out.Result)
 }
 
 func getABIBuiltin(args ...object.Object) object.Object {
@@ -77,7 +74,7 @@ func getContractBuiltin(args ...object.Object) object.Object {
 	if err != nil {
 		return newError(err.Error())
 	}
-	return &object.Instance{Name: "Artifact", Address: common.HexToAddress(addr), ABI: val}
+	return &object.Instance{Name: "Artifact", Address: web3.HexToAddress(addr), ABI: val}
 }
 
 // Factory is the factory method for the Etherscan backend

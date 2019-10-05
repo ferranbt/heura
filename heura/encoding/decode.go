@@ -4,11 +4,10 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/common"
-
+	"github.com/umbracle/go-web3"
+	"github.com/umbracle/go-web3/abi"
+	"github.com/umbracle/heura/helper/hex"
 	"github.com/umbracle/heura/heura/object"
-	"github.com/umbracle/minimal/helper/hex"
 )
 
 var (
@@ -23,35 +22,32 @@ var (
 
 // Decode converts an object into a go element
 func Decode(obj object.Object, t abi.Type) (interface{}, error) {
-	switch t.T {
-	case abi.SliceTy:
+	switch t.Kind() {
+	case abi.KindSlice:
 		return decodeSlice(obj, t)
 
-	case abi.IntTy:
+	case abi.KindInt:
 		return decodeInt(obj, t)
 
-	case abi.UintTy:
+	case abi.KindUInt:
 		return decodeUint(obj, t)
 
-	case abi.BoolTy:
+	case abi.KindBool:
 		return decodeBool(obj)
 
-	case abi.FixedBytesTy:
-		return decodeFixedBytes(obj, t.Type)
+	case abi.KindFixedBytes:
+		return decodeFixedBytes(obj, t.GoType())
 
-	case abi.HashTy:
-		return decodeHash(obj, t.Type)
+	case abi.KindAddress:
+		return decodeAddress(obj, t.GoType())
 
-	case abi.AddressTy:
-		return decodeAddress(obj, t.Type)
-
-	case abi.StringTy:
+	case abi.KindString:
 		return decodeString(obj)
 
-	case abi.BytesTy:
+	case abi.KindBytes:
 		return nil, fmt.Errorf("bytes mode not enabled")
 
-	case abi.ArrayTy:
+	case abi.KindArray:
 		return nil, fmt.Errorf("array type not covered")
 
 	default:
@@ -72,11 +68,11 @@ func decodeUint(obj object.Object, t abi.Type) (interface{}, error) { // FIX, ho
 		return nil, decodeErr(obj, "uint")
 	}
 
-	if t.Size == 256 {
+	if t.Size() == 256 {
 		return obj.(*object.Integer).Value, nil
 	}
 
-	return reflect.ValueOf(obj.(*object.Integer).Value.Uint64()).Convert(t.Type).Interface(), nil
+	return reflect.ValueOf(obj.(*object.Integer).Value.Uint64()).Convert(t.GoType()).Interface(), nil
 }
 
 func decodeInt(obj object.Object, t abi.Type) (interface{}, error) {
@@ -84,11 +80,11 @@ func decodeInt(obj object.Object, t abi.Type) (interface{}, error) {
 		return nil, decodeErr(obj, "int")
 	}
 
-	if t.Size == 256 {
+	if t.Size() == 256 {
 		return obj.(*object.Integer).Value, nil
 	}
 
-	return reflect.ValueOf(obj.(*object.Integer).Value.Int64()).Convert(t.Type).Interface(), nil
+	return reflect.ValueOf(obj.(*object.Integer).Value.Int64()).Convert(t.GoType()).Interface(), nil
 }
 
 func decodeBool(obj object.Object) (interface{}, error) {
@@ -125,9 +121,9 @@ func decodeSlice(obj object.Object, t abi.Type) (interface{}, error) {
 	}
 
 	elems := obj.(*object.Array).Elements
-	elemType := *t.Elem
+	elemType := *t.Elem()
 
-	sliceVal := reflect.MakeSlice(t.Type, len(elems), len(elems))
+	sliceVal := reflect.MakeSlice(t.GoType(), len(elems), len(elems))
 	for i, elt := range elems {
 		v, err := Decode(elt, elemType)
 		if err != nil {
@@ -164,8 +160,7 @@ func decodeAddress(obj object.Object, t reflect.Type) (interface{}, error) {
 	if obj.Type() != object.ADDRESS_OBJ {
 		return nil, decodeErr(obj, "address")
 	}
-
-	return common.HexToAddress(obj.(*object.Address).Value), nil
+	return web3.HexToAddress(obj.(*object.Address).Value), nil
 }
 
 func decodeErr(obj object.Object, t string) error {

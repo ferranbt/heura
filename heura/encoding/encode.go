@@ -5,10 +5,9 @@ import (
 	"math/big"
 	"reflect"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
-
+	"github.com/umbracle/go-web3/abi"
+	"github.com/umbracle/heura/helper/hex"
 	"github.com/umbracle/heura/heura/object"
-	"github.com/umbracle/minimal/helper/hex"
 )
 
 // Big batch of reflect types for topic reconstruction.
@@ -22,35 +21,32 @@ func Encode(value interface{}, t abi.Type) (object.Object, error) {
 }
 
 func encode(v reflect.Value, t abi.Type) (object.Object, error) {
-	switch t.T {
-	case abi.SliceTy:
+	switch t.Kind() {
+	case abi.KindSlice:
 		return encodeSlice(v, t)
 
-	case abi.IntTy:
+	case abi.KindInt:
 		return encodeInt(v)
 
-	case abi.UintTy:
+	case abi.KindUInt:
 		return encodeUInt(v)
 
-	case abi.BoolTy:
+	case abi.KindBool:
 		return encodeBool(v)
 
-	case abi.FixedBytesTy:
+	case abi.KindFixedBytes:
 		return encodeFixedBytes(v)
 
-	case abi.AddressTy:
+	case abi.KindAddress:
 		return encodeAddress(v)
 
-	case abi.StringTy:
+	case abi.KindString:
 		return encodeString(v)
 
-	case abi.HashTy:
+	case abi.KindBytes:
 		return nil, fmt.Errorf("hash type not supported")
 
-	case abi.BytesTy:
-		return nil, fmt.Errorf("hash type not supported")
-
-	case abi.ArrayTy:
+	case abi.KindArray:
 		return nil, fmt.Errorf("hash type not supported")
 	}
 
@@ -70,9 +66,11 @@ func encodeSlice(v reflect.Value, t abi.Type) (object.Object, error) {
 		return nil, encodeErr(v, "slice")
 	}
 
+	elemType := *t.Elem()
+
 	vs := make([]object.Object, v.Len())
 	for i := range vs {
-		elem, err := encode(v.Index(i), *t.Elem)
+		elem, err := encode(v.Index(i), elemType)
 		if err != nil {
 			return nil, err
 		}

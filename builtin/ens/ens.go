@@ -3,8 +3,9 @@ package ens
 import (
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/contracts/ens"
-	"github.com/umbracle/heura/heura/ethereum"
+	"github.com/umbracle/go-web3"
+	"github.com/umbracle/go-web3/contract/builtin/ens"
+	"github.com/umbracle/go-web3/jsonrpc"
 	"github.com/umbracle/heura/heura/object"
 )
 
@@ -12,21 +13,23 @@ func newError(format string, a ...interface{}) *object.Error {
 	return &object.Error{Message: fmt.Sprintf(format, a...)}
 }
 
-func resolve(args ...object.Object) object.Object {
+var (
+	mainnetAddress = web3.HexToAddress("0x314159265dD8dbb310642f98f50C066173C1259b")
+)
+
+func Resolve(args ...object.Object) object.Object {
 	if len(args) != 1 {
 		return newError("expected one param but found %d", len(args))
 	}
 	if args[0].Type() != object.STRING_OBJ {
 		return newError("expected argument to be string, got %s", args[0].Type())
 	}
-	// TODO, fetch the endpoint from somewhere else
-	ens, err := ethereum.NewENS("https://mainnet.infura.io", ens.MainNetAddress)
+	client, _ := jsonrpc.NewClient("https://mainnet.infura.io")
+	resolver := ens.NewENSResolver(mainnetAddress, client)
+
+	addr, err := resolver.Resolve(args[0].(*object.String).Value)
 	if err != nil {
-		panic(err)
-	}
-	addr, err := ens.Resolve(args[0].(*object.String).Value)
-	if err != nil {
-		panic(err)
+		return newError(err.Error())
 	}
 	return &object.Address{Value: addr.String()}
 }
@@ -35,7 +38,7 @@ func resolve(args ...object.Object) object.Object {
 func Factory() object.Object {
 	h := &object.Hash{}
 	h.SetString("Resolve", &object.Builtin{
-		Fn: resolve,
+		Fn: Resolve,
 	})
 	return h
 }

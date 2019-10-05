@@ -17,8 +17,7 @@ import (
 
 func init() {
 	RootCmd.Flags().BoolP("dry", "d", false, "build the script with no execution")
-	RootCmd.Flags().StringP("websocket", "w", "wss://mainnet.infura.io/ws", "websocket endpoint to connect")
-	RootCmd.Flags().StringP("rpc", "r", "https://mainnet.infura.io", "rpc endpoint to connect")
+	RootCmd.Flags().StringP("endpoint", "r", "https://mainnet.infura.io", "rpc endpoint to connect")
 }
 
 // RootCmd returns the run command
@@ -36,8 +35,7 @@ func rootRun(cmd *cobra.Command, args []string) {
 
 	file := args[0]
 
-	endpoint, _ := cmd.Flags().GetString("rpc")
-	wsEndpoint, _ := cmd.Flags().GetString("websocket")
+	endpoint, _ := cmd.Flags().GetString("endpoint")
 
 	env := object.NewEnvironment()
 	env.BuildEnvs(os.Environ())
@@ -73,7 +71,7 @@ func rootRun(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	eventManager := manager.NewEventManager(wsEndpoint, env)
+	eventManager := manager.NewEventManager(endpoint, env)
 	for _, event := range events {
 		eventManager.Listen(event)
 	}
